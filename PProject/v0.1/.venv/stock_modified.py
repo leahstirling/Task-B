@@ -38,15 +38,9 @@ from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer
 # If not, save the data into a directory
 # ------------------------------------------------------------------------------
 # DATA_SOURCE = "yahoo"
-COMPANY = 'CBA.AX'
-
-TRAIN_START = '2020-01-01'  # Start date to read
-TRAIN_END = '2023-08-01'  # End date to read
 
 
-# data = web.DataReader(COMPANY, DATA_SOURCE, TRAIN_START, TRAIN_END) # Read data using yahoo
-
-def load_and_process_data(company, start_date, end_date, price_value, split_method, train_size, scale_features, save_data,
+def load_and_process_data(company, start_date, end_date, price_value, split_method, split_date, train_size, scale_features, save_data,
                           load_data):
     """
     Docstring:
@@ -54,11 +48,12 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
 
     Args:
         company (str): The ticker symbol of the company.
-        start_date (str): The start date for the dataset.
-        end_date (str): The end date for the dataset.
+        start_date (str): The start date for the dataset. Format YYYY-MM-DD
+        end_date (str): The end date for the dataset. Format as above
         price_value (str): Value to read from data ("Open", "High", "Low", "Close", "Adj Close", "Volume").
             Close is recommended
         split_method (str): The method to split the data (ratio, date, or random).
+        split_date (str): The date to split between train and test data. Format as above
         train_size (float): The proportion of data for training.
         scale_features (bool): Whether to scale the features.
         save_data (bool): Whether to save the processed data.
@@ -71,6 +66,7 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
     # Defining a filename with high specificity, to avoid confusion with data with a different time frame
     data_file = f"storeddata/{company}_{start_date}_{end_date}_data.csv"
 
+    # Checking if loading data locally
     if (load_data):
         if os.path.exists(data_file):
             # Load data from local file, using Date as the index column
@@ -84,18 +80,19 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
         if save_data:
             data.to_csv(data_file)
 
-    # Handle NaN values using pandas to drop any missing values.
+    # Handle NaN values using pandas to drop any rows with missing values.
     # Could also use fillna to fill with dummy data if this introduces issues
     data = data.dropna()
 
-    # Split data
+    # Split data based on defined method
     if split_method == "random":
         # Randomly split data using sklearn. Shuffles data before splitting to ensure randomness
         train_data, test_data = train_test_split(data, train_size=train_size, shuffle=True)
     elif split_method == "date":
-        split_index = int(train_size * len(data))
-        train_data = data.iloc[:split_index, :]
-        test_data = data.iloc[split_index:, :]
+        # Split data based on a specific date
+        split_index = data.index.get_loc(split_date, method='nearest')
+        train_data = data[:split_index]
+        test_data = data[split_index:]
     elif split_method == "ratio":
         split_index = int(train_size * len(data))
         train_data = data.iloc[:split_index, :]
@@ -103,11 +100,13 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
     else:
         raise ValueError("Invalid split method.")
 
-    # Scale features
+    # Defining the scaler outside
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    # Note that, by default, feature_range=(0, 1). Thus, if you want a different
+    # feature_range (min,max) then you'll need to specify it here
+
+    # Scaling the data
     if scale_features:
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        # Note that, by default, feature_range=(0, 1). Thus, if you want a different
-        # feature_range (min,max) then you'll need to specify it here
         train_data_scaled = scaler.fit_transform(train_data[price_value].values.reshape(-1, 1))
         test_data_scaled = scaler.transform(test_data[price_value].values.reshape(-1, 1))
     else:
@@ -119,7 +118,7 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
 PRICE_VALUE = "Close"
 
 # Call function with args
-train_data_scaled, test_data_scaled, scaler, data = load_and_process_data('CBA.AX','2020-01-01', '2023-08-01', PRICE_VALUE, "ratio", 0.8, True, False, True)
+train_data_scaled, test_data_scaled, scaler, data = load_and_process_data('CBA.AX','2020-01-01', '2024-07-02', PRICE_VALUE, "ratio", '2023-08-02', 0.8, True, False, True)
 
 # Number of days to look back to base the prediction
 PREDICTION_DAYS = 60  # Original
