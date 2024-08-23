@@ -90,10 +90,12 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
         train_data, test_data = train_test_split(data, train_size=train_size, shuffle=True)
     elif split_method == "date":
         # Split data based on a specific date
+        # Search data for given date, split before and after this date
         split_index = data.index.get_loc(split_date)
         train_data = data[:split_index]
         test_data = data[split_index:]
     elif split_method == "ratio":
+        # Similar to date splitting, but using an arbitary ratio applied to the whole dataset
         split_index = int(train_size * len(data))
         train_data = data.iloc[:split_index, :]
         test_data = data.iloc[split_index:, :]
@@ -105,7 +107,7 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
     # Note that, by default, feature_range=(0, 1). Thus, if you want a different
     # feature_range (min,max) then you'll need to specify it here
 
-    # Scaling the data
+    # Scaling the data (or not scaling the data!)
     if scale_features:
         train_data_scaled = scaler.fit_transform(train_data[price_value].values.reshape(-1, 1))
     else:
@@ -113,6 +115,7 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
 
     return train_data_scaled, test_data, scaler, data
 
+# Assigning variables externally that are used later
 COMPANY = 'CBA.AX'
 PRICE_VALUE = "Close"
 
