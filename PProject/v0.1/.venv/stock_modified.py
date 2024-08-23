@@ -45,22 +45,23 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
     """
     Docstring:
     Function loads and processes stock data from Yahoo Finance.
+    Takes various arguments to define the data and processing steps.
+    Returns a tuple containing the processed data.
 
     Args:
-        company (str): The ticker symbol of the company.
-        start_date (str): The start date for the dataset. Format YYYY-MM-DD
-        end_date (str): The end date for the dataset. Format as above
-        price_value (str): Value to read from data ("Open", "High", "Low", "Close", "Adj Close", "Volume").
-            Close is recommended
-        split_method (str): The method to split the data (ratio, date, or random).
-        split_date (str): The date to split between train and test data. Format as above
-        train_size (float): The proportion of data for training.
-        scale_features (bool): Whether to scale the features.
-        save_data (bool): Whether to save the processed data.
-        load_data (bool): Whether to load the data from the local directory.
+        company (str): Ticker symbol of the company (e.g., "AAPL").
+        start_date (str): Start date for data retrieval (YYYY-MM-DD format).
+        end_date (str): End date for data retrieval (YYYY-MM-DD format).
+        price_value (str): Specific price value to retrieve ("Open", "High", "Low", "Close", "Adj Close", "Volume").
+        split_method (str): Method for splitting data ("ratio", "date", or "random").
+        split_date (str): Date for splitting data using the "date" method (YYYY-MM-DD format).
+        train_size (float): Proportion of data for training, used while splitting using "ratio" (between 0 and 1).
+        scale_features (bool): Whether to scale features before training.
+        save_data (bool): Whether to save the processed data locally.
+        load_data (bool): Whether to load the data from a local file (if it exists).
 
     Returns:
-        tuple: A tuple containing the scaled training data, scaled testing data, scalers, and the raw data.
+        tuple: A tuple containing the scaled training data, raw split testing data, scaler object
     """
 
     # Defining a filename with high specificity, to avoid confusion with data with a different time frame
@@ -89,13 +90,13 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
         # Randomly split data using sklearn. Shuffles data before splitting to ensure randomness
         train_data, test_data = train_test_split(data, train_size=train_size, shuffle=True)
     elif split_method == "date":
-        # Split data based on a specific date
+        # Split data based on a specific date - split_date
         # Search data for given date, split before and after this date
         split_index = data.index.get_loc(split_date)
         train_data = data[:split_index]
         test_data = data[split_index:]
     elif split_method == "ratio":
-        # Similar to date splitting, but using an arbitary ratio applied to the whole dataset
+        # Similar to date splitting, but using an arbitary ratio applied to the whole dataset - train_data
         split_index = int(train_size * len(data))
         train_data = data.iloc[:split_index, :]
         test_data = data.iloc[split_index:, :]
@@ -113,14 +114,15 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
     else:
         train_data_scaled = train_data
 
-    return train_data_scaled, test_data, scaler, data
+    # Returning scaled training data, split test data, scaler object
+    return train_data_scaled, test_data, scaler
 
 # Assigning variables externally that are used later
 COMPANY = 'CBA.AX'
 PRICE_VALUE = "Close"
 
 # Call function with args
-train_data_scaled, test_data, scaler, data = load_and_process_data(COMPANY,'2020-01-01', '2024-07-02', PRICE_VALUE, "date", '2023-08-02', 0.8, True, True, False)
+train_data_scaled, test_data, scaler = load_and_process_data(COMPANY,'2020-01-01', '2024-07-02', PRICE_VALUE, "date", '2023-08-02', 0.8, True, True, False)
 
 # Number of days to look back to base the prediction
 PREDICTION_DAYS = 60  # Original
