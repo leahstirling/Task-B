@@ -90,7 +90,7 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
         train_data, test_data = train_test_split(data, train_size=train_size, shuffle=True)
     elif split_method == "date":
         # Split data based on a specific date
-        split_index = data.index.get_loc(split_date, method='nearest')
+        split_index = data.index.get_loc(split_date)
         train_data = data[:split_index]
         test_data = data[split_index:]
     elif split_method == "ratio":
@@ -108,17 +108,16 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
     # Scaling the data
     if scale_features:
         train_data_scaled = scaler.fit_transform(train_data[price_value].values.reshape(-1, 1))
-        test_data_scaled = scaler.transform(test_data[price_value].values.reshape(-1, 1))
     else:
         train_data_scaled = train_data
-        test_data_scaled = test_data
 
-    return train_data_scaled, test_data_scaled, scaler, data
+    return train_data_scaled, test_data, scaler, data
 
+COMPANY = 'CBA.AX'
 PRICE_VALUE = "Close"
 
 # Call function with args
-train_data_scaled, test_data_scaled, scaler, data = load_and_process_data('CBA.AX','2020-01-01', '2024-07-02', PRICE_VALUE, "ratio", '2023-08-02', 0.8, True, False, True)
+train_data_scaled, test_data, scaler, data = load_and_process_data(COMPANY,'2020-01-01', '2024-07-02', PRICE_VALUE, "date", '2023-08-02', 0.8, True, True, False)
 
 # Number of days to look back to base the prediction
 PREDICTION_DAYS = 60  # Original
@@ -225,16 +224,6 @@ model.fit(x_train, y_train, epochs=25, batch_size=32)
 # ------------------------------------------------------------------------------
 # Test the model accuracy on existing data
 # ------------------------------------------------------------------------------
-# Load the test data
-TEST_START = '2023-08-02'
-TEST_END = '2024-07-02'
-
-# test_data = web.DataReader(COMPANY, DATA_SOURCE, TEST_START, TEST_END)
-
-test_data = yf.download(COMPANY, TEST_START, TEST_END)
-
-# The above bug is the reason for the following line of code
-# test_data = test_data[1:]
 
 actual_prices = test_data[PRICE_VALUE].values
 
