@@ -135,11 +135,15 @@ def candlestick_display(data, n_days=1, title="Stock Prices"):
     candles = list(zip(timestamps, ohlc['Open'], ohlc['High'], ohlc['Low'], ohlc['Close']))
 
     # Create candlestick chart using mpl_finance
+    # Generating a Matplotlib figure and axis
     fig, ax = plt.subplots(figsize=(12, 6))
+    # Plotting candlesticks on axis and styling with width (scaling by n_days) and colour
     candlestick_ohlc(ax, candles, width=n_days, colorup='green', colordown='red')
+    # Date formatting - though ideally this would not use timestamps
     fig.autofmt_xdate()
     plt.title(title)
     plt.ylabel('Price')
+    # Including grid for slightly better readability
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
     plt.show()
 
@@ -152,6 +156,7 @@ def boxplot_display(data, n_days=1, title="Stock Prices"):
           n_days (int, optional): Number of days to represent in each boxplot. Defaults to 1.
           title (str, optional): Title for the plot. Defaults to "Stock Prices".
       """
+    
     # Calculate OHLC values for each n-day window
     # First and last are not valid agg functions for rolling windows - using lambda grabbed by iloc as workaround
     ohlc = data[['Open', 'High', 'Low', 'Close']].rolling(window=n_days).agg({'Open': lambda x: x.iloc[0],
@@ -160,10 +165,13 @@ def boxplot_display(data, n_days=1, title="Stock Prices"):
                                                                            'Close': lambda x: x.iloc[-1]})
 
     # Create boxplot
+    # Generating figure
     plt.figure(figsize=(12, 6))
+    # Included dropna in case lambda grabs are faulty
     plt.boxplot(ohlc[['Open', 'High', 'Low', 'Close']].dropna().values.T)
-    plt.xticks(range(1, 5), ['Open', 'High', 'Low', 'Close'])
     plt.title(title)
+    # Generating xticks or else one for each boxplot spams the screen
+    plt.xticks(range(1, 50), ['Open', 'High', 'Low', 'Close'])
     plt.ylabel('Price')
     plt.show()
 
