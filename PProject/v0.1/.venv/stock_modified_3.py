@@ -7,17 +7,9 @@
 # Youtuble link: https://www.youtube.com/watch?v=PuZY9q-aKLw
 # By: NeuralNine
 
-# Need to install the following (best in a virtual env):
-# pip install numpy
-# pip install matplotlib
-# pip install pandas
-# pip install tensorflow
-# pip install scikit-learn
-# pip install pandas-datareader
-# pip install yfinance
-
 import numpy as np
 import matplotlib.pyplot as plt
+from mplfinance.original_flavor import candlestick_ohlc
 import pandas as pd
 import pandas_datareader as web
 import datetime as dt
@@ -115,14 +107,48 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
         train_data_scaled = train_data
 
     # Returning scaled training data, split test data, scaler object
-    return train_data_scaled, test_data, scaler, data
+    return train_data_scaled, test_data, scaler
+
+def candlestick_display(data, n_days=1, title="Stock Prices"):
+    """
+      Function to display financial data using candlestick charts.
+
+      Args:
+          data (pandas.DataFrame): DataFrame containing OHLC (Open, High, Low, Close) data.
+          n_days (int, optional): Number of days to include in each candlestick. Defaults to 1.
+          title (str, optional): Title for the chart. Defaults to "Stock Prices".
+      """
+
+    # Calculate OHLC values based on n_days
+    if n_days > 1:
+        ohlc = data[['Open', 'High', 'Low', 'Close']].rolling(window=n_days).agg(
+            Open=('Open', 'first'),
+            High=('High', 'max'),
+            Low=('Low', 'min'),
+            Close=('Close', 'last')
+        )
+    else:
+        ohlc = data[['Open', 'High', 'Low', 'Close']]
+
+    # Convert data to format expected by candlestick_ohlc
+    dates = ohlc.index.to_pydatetime()
+    candles = list(zip(dates, ohlc['Open'], ohlc['High'], ohlc['Low'], ohlc['Close']))
+
+    # Create candlestick chart
+    fig, ax = plt.subplots(figsize=(12, 6))
+    candlestick_ohlc(ax, candles, width=0.6, colorup='green', colordown='red')
+    fig.autofmt_xdate()
+    plt.title(title)
+    plt.ylabel('Price')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.show()
 
 # Assigning variables externally that are used later
 COMPANY = 'CBA.AX'
 PRICE_VALUE = "Close"
 
 # Call function with args
-train_data_scaled, test_data, scaler, data = load_and_process_data(COMPANY,'2020-01-01', '2024-07-02', PRICE_VALUE, "date", '2023-08-02', 0.8, True, True, False)
+train_data_scaled, test_data, scaler = load_and_process_data(COMPANY,'2020-01-01', '2024-07-02', PRICE_VALUE, "date", '2023-08-02', 0.8, True, True, False)
 
 # Number of days to look back to base the prediction
 PREDICTION_DAYS = 60  # Original
@@ -286,6 +312,8 @@ plt.xlabel("Time")
 plt.ylabel(f"{COMPANY} Share Price")
 plt.legend()
 plt.show()
+
+candlestick_display(scaled_data)
 
 # ------------------------------------------------------------------------------
 # Predict next day
