@@ -21,7 +21,7 @@ import os
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer
+from tensorflow.keras.layers import Dense, Dropout, LSTM, InputLayer, Bidirectional
 
 # ------------------------------------------------------------------------------
 # Load Data
@@ -109,6 +109,34 @@ def load_and_process_data(company, start_date, end_date, price_value, split_meth
 
     # Returning scaled training data, split test data, scaler object
     return train_data_scaled, test_data, scaler, data
+
+def create_model(sequence_length, n_features, units=256, cell=LSTM, n_layers=2, dropout=0.3,
+                loss="mean_absolute_error", optimizer="rmsprop", bidirectional=False):
+    model = Sequential()
+    for i in range(n_layers):
+        if i == 0:
+            # first layer
+            if bidirectional:
+                model.add(Bidirectional(cell(units, return_sequences=True), batch_input_shape=(None, sequence_length, n_features)))
+            else:
+                model.add(cell(units, return_sequences=True, batch_input_shape=(None, sequence_length, n_features)))
+        elif i == n_layers - 1:
+            # last layer
+            if bidirectional:
+                model.add(Bidirectional(cell(units, return_sequences=False)))
+            else:
+                model.add(cell(units, return_sequences=False))
+        else:
+            # hidden layers
+            if bidirectional:
+                model.add(Bidirectional(cell(units, return_sequences=True)))
+            else:
+                model.add(cell(units, return_sequences=True))
+        # add dropout after each layer
+        model.add(Dropout(dropout))
+    model.add(Dense(1, activation="linear"))
+    model.compile(loss=loss, metrics=["mean_absolute_error"], optimizer=optimizer)
+    return model
 
 def candlestick_display(data, n_days=1, title="Stock Prices"):
     """
@@ -204,6 +232,7 @@ x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 # We now reshape x_train into a 3D array(p, q, 1); Note that x_train
 # is an array of p inputs with each input being a 2D array
 
+"""
 # ------------------------------------------------------------------------------
 # Build the Model
 ## TO DO:
@@ -259,6 +288,11 @@ model.compile(optimizer='adam', loss='mean_squared_error')
 
 # optimizer='rmsprop'/'sgd'/'adadelta'/...
 # loss='mean_absolute_error'/'huber_loss'/'cosine_similarity'/...
+"""
+
+# Calling create_model function from P1 example
+model = create_model(50, len(FEATURE_COLUMNS), loss='mean_squared_error', units=UNITS, cell=CELL, n_layers=N_LAYERS,
+                    dropout=DROPOUT, optimizer='adam', bidirectional=False)
 
 # Now we are going to train this model with our training data
 # (x_train, y_train)
